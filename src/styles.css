@@ -301,6 +301,11 @@ h2 { margin: 0; font-size: 18px; font-weight: 700; }
 .group-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .group-foot { height: 16px; border-top: 1px solid var(--ink-2); }
 
+/* ---------- Hold to lift / drag to reorder ---------- */
+.reorder-item { position: relative; flex: none; }
+.reorder-item.is-lifted { z-index: 5; }
+.reorder-item.is-lifted > * { box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25); }
+
 /* ---------- Swipe to reveal ---------- */
 .swipe { position: relative; overflow: hidden; }
 .swipe-actions { position: absolute; top: 0; right: 0; bottom: 0; display: flex; }

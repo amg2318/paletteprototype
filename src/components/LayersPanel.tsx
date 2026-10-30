@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import checkboxIcon from '../assets/checkbox.svg';
 import plusIcon from '../assets/plus.svg';
+import { useReorder } from '../hooks/useReorder';
 import { drawThumbnail } from '../layerStore';
 import { activeVariant, type Group, type Layer } from '../model';
 import * as ops from '../ops';
@@ -77,6 +78,11 @@ function LayerRow({ layer, group, ...swipe }: { layer: Layer; group?: Group } & 
 function GroupCard({ group, ...swipe }: { group: Group } & SwipeProps) {
   const { commit, navigate } = useStore();
   const variant = activeVariant(group);
+  const reorder = useReorder(
+    variant.layers.map((l) => l.id),
+    (from, to) => commit((d) => ops.moveItem(d, group.id, from, to)),
+    (id) => navigate((d) => ops.selectLayer(d, id)),
+  );
   const actions = group.isVariant
     ? [
         { label: 'New variant', onSelect: () => commit((d) => ops.branchVariant(d, group.id)) },
@@ -105,7 +111,9 @@ function GroupCard({ group, ...swipe }: { group: Group } & SwipeProps) {
         </div>
       </Swipeable>
       {variant.layers.map((layer) => (
-        <LayerRow key={layer.id} layer={layer} group={group} {...swipe} />
+        <div key={layer.id} {...reorder.bind(layer.id)}>
+          <LayerRow layer={layer} group={group} {...swipe} />
+        </div>
       ))}
       <div className="group-foot" />
     </section>
@@ -113,9 +121,15 @@ function GroupCard({ group, ...swipe }: { group: Group } & SwipeProps) {
 }
 
 export function LayersPanel() {
-  const { doc, commit } = useStore();
+  const { doc, commit, navigate } = useStore();
   const [openId, setOpenId] = useState<string | null>(null);
   const swipe = { openId, setOpenId };
+  const reorder = useReorder(
+    doc.items.map((it) => it.id),
+    (from, to) => commit((d) => ops.moveItem(d, null, from, to)),
+    // Holding a loose layer adds it to (or removes it from) the selection for grouping.
+    (id) => navigate((d) => (d.items.find((it) => it.id === id)?.kind === 'layer' ? ops.toggleSelected(d, id) : d)),
+  );
   return (
     <aside className="layers-panel">
       <div className="layers-head">
@@ -125,13 +139,11 @@ export function LayersPanel() {
         </button>
       </div>
       <div className="layers-list">
-        {doc.items.map((item) =>
-          item.kind === 'group' ? (
-            <GroupCard key={item.id} group={item} {...swipe} />
-          ) : (
-            <LayerRow key={item.id} layer={item} {...swipe} />
-          ),
-        )}
+        {doc.items.map((item) => (
+          <div key={item.id} {...reorder.bind(item.id)}>
+            {item.kind === 'group' ? <GroupCard group={item} {...swipe} /> : <LayerRow layer={item} {...swipe} />}
+          </div>
+        ))}
       </div>
       {doc.selectedIds.length > 1 && (
         <div className="layers-foot">

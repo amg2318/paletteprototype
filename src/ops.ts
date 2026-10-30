@@ -110,7 +110,18 @@ export function groupLayers(doc: Doc, layerIds: string[]): Doc {
   return selectLayer({ ...doc, items }, active);
 }
 
-export const makeVariant = (doc: Doc, groupId: string): Doc => mapGroup(doc, groupId, (g) => ({ ...g, isVariant: true }));
+/** Reorder within the top-level stack (groupId null) or a group's active variant. */
+export function moveItem(doc: Doc, groupId: string | null, from: number, to: number): Doc {
+  const move = <T,>(list: T[]) => {
+    const next = [...list];
+    next.splice(to, 0, ...next.splice(from, 1));
+    return next;
+  };
+  if (!groupId) return { ...doc, items: move(doc.items) };
+  return mapGroup(doc, groupId, (g) => mapActiveVariant(g, (v) => ({ ...v, layers: move(v.layers) })));
+}
+
+export const makeVariant =(doc: Doc, groupId: string): Doc => mapGroup(doc, groupId, (g) => ({ ...g, isVariant: true }));
 
 /** Make another variant active, keeping the selection at the same position in the stack. */
 export function switchVariant(doc: Doc, groupId: string, variantId: string): Doc {
